@@ -8,7 +8,7 @@
 #   the tool assumes directory scanning mode.
 #
 # IMPORTANT: If your URL contains special characters (e.g., &, ;, or |),
-# either enclose the URL in quotes.
+# either enclose the URL in quotes "<target-url>".
 #
 # Usage examples:
 #   Web Fuzzing (with FUZZ placeholders):
@@ -82,7 +82,11 @@ process_fuzz_url() {
     else
         local http_code
         http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
-        if [ "$http_code" != "404" ]; then
+        if [ "$http_code" == "302" ]; then
+            local redirect_url
+            redirect_url=$(curl -s -o /dev/null -w "%{redirect_url}" "$url")
+            echo -e "${BLUE}[WEB]${RESET} $url -> ${GREEN}$http_code${RESET} ${BLUE}-> ${redirect_url}${RESET}"
+        elif [ "$http_code" != "404" ]; then
             echo -e "${BLUE}[WEB]${RESET} $url -> ${GREEN}$http_code${RESET}"
         fi
     fi
@@ -106,7 +110,11 @@ run_web_scanner() {
         for word in ${wordlist_data[0]}; do
             new_url="${target_url}${word}"
             http_code=$(curl -s -o /dev/null -w "%{http_code}" "$new_url")
-            if [ "$http_code" != "404" ]; then
+            if [ "$http_code" == "302" ]; then
+                local redirect_url
+                redirect_url=$(curl -s -o /dev/null -w "%{redirect_url}" "$new_url")
+                echo -e "${BLUE}[DIR]${RESET} $new_url -> ${GREEN}$http_code${RESET} ${BLUE}-> ${redirect_url}${RESET}"
+            elif [ "$http_code" != "404" ]; then
                 echo -e "${BLUE}[DIR]${RESET} $new_url -> ${GREEN}$http_code${RESET}"
             fi
         done
